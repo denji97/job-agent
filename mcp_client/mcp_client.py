@@ -12,7 +12,8 @@ class MCPClient:
         self.tools = []
         self.exit_stack = AsyncExitStack()
 
-    async def connect(self):
+    async def __aenter__(self):
+        await self.exit_stack.__aenter__()
         stdio_transport = await self.exit_stack.enter_async_context(
             stdio_client(self.server_params)
         )
@@ -23,13 +24,14 @@ class MCPClient:
         await self.session.initialize()
         response = await self.session.list_tools()
         self.tools = response.tools
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return await self.exit_stack.__aexit__(exc_type, exc, tb)
 
     async def call_tool(self, name: str, arguments: dict):
         result = await self.session.call_tool(name, arguments)
         return result.content[0].text
-
-    async def disconnect(self):
-        await self.exit_stack.aclose()
 
 
 if __name__ == "__main__":
@@ -41,17 +43,10 @@ if __name__ == "__main__":
             command=sys.executable,
             args=[os.getcwd() + "/mcp_servers" + "/server_job_listings.py"],
         )
-        mcp_client = MCPClient(server_params=params)
-        await mcp_client.connect()
-        for t in mcp_client.tools:
-            print(t)
-            print(type(t))
-            break
-        #     print(f"  - {t.name}: {t.description}")
-        # result_tool_call = await mcp_client.call_tool(
-        #     "get_job_ids", {"job_title": "AI-Engineer", "city": "Köln", "radius": "50"}
-        # )
-        # print(result_tool_call)
-        await mcp_client.disconnect()
+        async with MCPClient(server_params=params) as mcp_client:
+            for t in mcp_client.tools:
+                print(t)
+                print(type(t))
+                break
 
     asyncio.run(main())
