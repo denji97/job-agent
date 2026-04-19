@@ -18,7 +18,14 @@ async def main():
                 command=sys.executable,
                 args=[os.getcwd() + "/mcp_servers" + "/server_job_listings.py"],
             )
-        )
+        ),
+        MCPClient(
+            server_params=StdioServerParameters(
+                command="npx",
+                args=["-y", "@notionhq/notion-mcp-server"],
+                env={"NOTION_TOKEN": os.environ["NOTION_TOKEN"]},
+            )
+        ),
     ]
     try:
         for mcp_client in mcp_clients:
