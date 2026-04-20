@@ -8,5 +8,7 @@ dependencies = [
     "anthropic>=0.96.0",
     "httpx>=0.28.1",
     "mcp[cli]>=1.27.0",
+    "prompt-toolkit>=3.0.52",
     "python-dotenv>=1.2.2",
+    "rich>=15.0.0",
 ]

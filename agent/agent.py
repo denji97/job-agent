@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
 
@@ -11,13 +11,14 @@ class Agent:
         clients: List[MCPClient],
         system_prompt: str,
         model: str = "claude-sonnet-4-6",
+        max_tokens: int = 8192,
     ):
         self.clients = clients
         self.system_prompt = system_prompt
         self.model = model
         self.tool_client_map, self.tool_list = self._setup_tools()
         self.anthropic = Anthropic()
-        self._max_tokens = 5000
+        self._max_tokens = max_tokens
 
     def _setup_tools(self) -> Tuple[Dict[str, MCPClient], List[Dict[str, str]]]:
         tool_client_map = {}
@@ -35,8 +36,15 @@ class Agent:
         return tool_client_map, tool_list
 
     async def run(
-        self, messages: List[Dict[str, Any]]
+        self,
+        messages: List[Dict[str, Any]],
+        on_event: Optional[Callable[[str], None]] = None,
     ) -> Tuple[List[Dict[str, Any]], str]:
+        def emit(msg: str) -> None:
+            if on_event:
+                on_event(msg)
+
+        emit("Denke nach…")
         response = self.anthropic.messages.create(
             model=self.model,
             system=self.system_prompt,
@@ -49,6 +57,7 @@ class Agent:
             tool_results = []
             for block in response.content:
                 if block.type == "tool_use":
+                    emit(f"Rufe {block.name} auf…")
                     tool_client = self.tool_client_map[block.name]
                     result = await tool_client.call_tool(block.name, block.input)
                     tool_results.append(
@@ -63,6 +72,7 @@ class Agent:
                 {"role": "assistant", "content": response.content},
                 {"role": "user", "content": tool_results},
             ]
+            emit("Denke nach…")
             response = self.anthropic.messages.create(
                 model=self.model,
                 system=self.system_prompt,

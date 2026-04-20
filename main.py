@@ -5,9 +5,12 @@ from contextlib import AsyncExitStack
 
 from dotenv import load_dotenv
 from mcp import StdioServerParameters
+from prompt_toolkit import PromptSession
+from rich.console import Console
 
 from agent.agent import Agent
 from mcp_client.mcp_client import MCPClient
+from system_prompt import SYSTEM_PROMPT
 
 load_dotenv()
 
@@ -37,19 +40,32 @@ async def main():
             ),
         ]
 
-        agent = Agent(clients=mcp_clients, system_prompt="")
+        agent = Agent(clients=mcp_clients, system_prompt=SYSTEM_PROMPT)
         messages = []
+        session = PromptSession(multiline=True)
+        console = Console()
         try:
             while True:
-                query = input("<You>:\n")
+                query = (
+                    await session.prompt_async("<You> (Alt+Enter/Esc+Enter to send):\n")
+                ).strip()
+                if not query:
+                    continue
                 if query.lower() == "quit":
                     break
 
+                console.print("[dim]✓ gesendet[/dim]")
                 messages.append({"role": "user", "content": query})
-                messages, output_msg = await agent.run(messages=messages)
+                with console.status("[cyan]Denke nach…[/cyan]", spinner="dots") as status:
+                    def on_event(msg: str) -> None:
+                        status.update(f"[cyan]{msg}[/cyan]")
+
+                    messages, output_msg = await agent.run(
+                        messages=messages, on_event=on_event
+                    )
                 messages.append({"role": "assistant", "content": output_msg})
-                print(f"<Job-Agent>\n{output_msg}")
-        except KeyboardInterrupt:
+                console.print(f"[bold green]<Job-Agent>[/bold green]\n{output_msg}")
+        except (KeyboardInterrupt, EOFError):
             print("\nExiting...")
 
 
