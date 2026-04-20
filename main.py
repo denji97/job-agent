@@ -16,6 +16,7 @@ load_dotenv()
 
 
 async def main():
+    # add MCP Server connections and use AsyncExitStack for clean connections and disconnectiosn
     async with AsyncExitStack() as stack:
         mcp_clients = [
             await stack.enter_async_context(
@@ -42,8 +43,10 @@ async def main():
 
         agent = Agent(clients=mcp_clients, system_prompt=SYSTEM_PROMPT)
         messages = []
+        # clearer chat display
         session = PromptSession(multiline=True)
         console = Console()
+        # chat loop
         try:
             while True:
                 query = (
@@ -55,11 +58,16 @@ async def main():
                     break
 
                 console.print("[dim]✓ gesendet[/dim]")
+                # Anthropic API expects the message in a certain format
                 messages.append({"role": "user", "content": query})
-                with console.status("[cyan]Denke nach…[/cyan]", spinner="dots") as status:
+                with console.status(
+                    "[cyan]Denke nach…[/cyan]", spinner="dots"
+                ) as status:
+
                     def on_event(msg: str) -> None:
                         status.update(f"[cyan]{msg}[/cyan]")
 
+                    # query the LLM
                     messages, output_msg = await agent.run(
                         messages=messages, on_event=on_event
                     )
