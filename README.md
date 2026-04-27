@@ -40,6 +40,8 @@ Make sure Ollama is running (`ollama serve` from a terminal, or just leave the s
 
 ### Installing uv
 
+> **Skip this section if you're using Docker.** uv and Python are already inside the image.
+
 ```bash
 # macOS / Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -51,6 +53,8 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 More options: [docs.astral.sh/uv/getting-started/installation](https://docs.astral.sh/uv/getting-started/installation/).
 
 ### Installing Node.js (for the uv workflow)
+
+> **Skip this section if you're using Docker.** Node and `npx` are already inside the image.
 
 Pick one:
 
