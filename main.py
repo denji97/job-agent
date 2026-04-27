@@ -10,9 +10,16 @@ from rich.console import Console
 
 from agent.agent import Agent
 from mcp_client.mcp_client import MCPClient
-from system_prompt import SYSTEM_PROMPT
+from system_prompt import SYSTEM_PROMPT_DICT
 
 load_dotenv()
+
+variant = os.environ.get("SYSTEM_PROMPT", "implicit")
+if variant not in SYSTEM_PROMPT_DICT:
+    raise ValueError(
+        f"SYSTEM_PROMPT must be one of {list(SYSTEM_PROMPT_DICT)}, got {variant!r}"
+    )
+SYSTEM_PROMPT = SYSTEM_PROMPT_DICT[variant]
 
 
 async def main():
@@ -46,6 +53,10 @@ async def main():
         # clearer chat display
         session = PromptSession(multiline=True)
         console = Console()
+        console.print(
+            f"[bold]Modell:[/bold] {agent.model}  |  "
+            f"[bold]System-Prompt:[/bold] {variant}"
+        )
         # chat loop
         try:
             while True:
